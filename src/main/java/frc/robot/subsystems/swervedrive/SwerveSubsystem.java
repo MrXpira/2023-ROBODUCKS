@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.LimelightHelpers;
+import frc.robot.Robot;
 import frc.robot.Constants.Auton;
 import frc.robot.LimelightHelpers.LimelightResults;
 
@@ -309,8 +310,9 @@ public class SwerveSubsystem extends SubsystemBase
   // }
 
   // private void updateVisionPose() {
+    // if (!Robot.isSimulation()) {
   //   LimelightResults pipelineResults =  LimelightHelpers.getLatestResults("");
-  //   if (pipelineResults.targetingResults.valid && Robot.isReal()) {
+  //   if (pipelineResults.targetingResults.valid) {
   //     double[] botpose = getCurrentBotPoseVision();
   //     double timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
 
@@ -318,56 +320,55 @@ public class SwerveSubsystem extends SubsystemBase
 
   //     swerveDrive.addVisionMeasurement(currentPose,timestamp, true, .5);
   //   }
+//    }   
   // }
   
   /**
    * Updates the current pose
    */
   private void updateVisionPose() {
-    LimelightResults pipelineResults =  LimelightHelpers.getLatestResults("");
-    double[] botpose;
-    double timestamp;
-    if (pipelineResults.targetingResults.valid) {
-      if (isRedAlliance) {
-        botpose = LimelightHelpers.getBotPose_wpiRed("");
-        timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
-      } else {
-        botpose = LimelightHelpers.getBotPose_wpiBlue("");
-        timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
+    if (!Robot.isSimulation()) {
+      LimelightResults pipelineResults =  LimelightHelpers.getLatestResults("");
+      double[] botpose;
+      double timestamp;
+      if (pipelineResults.targetingResults.valid) {
+        if (isRedAlliance) {
+          botpose = LimelightHelpers.getBotPose_wpiRed("");
+          timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
+        } else {
+          botpose = LimelightHelpers.getBotPose_wpiBlue("");
+          timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
+        }
+  
+        Pose2d currentPose = new Pose2d(new Translation2d(botpose[0], botpose[1]), new Rotation2d(Units.degreesToRadians(botpose[5])));
+  
+        swerveDrive.addVisionMeasurement(currentPose,timestamp, true, .5);
       }
-
-      Pose2d currentPose = new Pose2d(new Translation2d(botpose[0], botpose[1]), new Rotation2d(Units.degreesToRadians(botpose[5])));
-
-      swerveDrive.addVisionMeasurement(currentPose,timestamp, true, .5);
     }
   }
 
   public Command moveRevOntoChargeStation() {
-        
-    return this.run(() -> {
+    // TODO: Get pose and see if in front or behind charge station.
+    return this.run(() -> { 
         System.out.println("Not on platform. Moving forward.");
-        drive(new Translation2d(-3,0),0, false, true);
+        drive(new Translation2d(Constants.Auton.moveOntoChargeStationSpeed,0),0, true, true);
         System.out.println(swerveDrive.getPitch().getDegrees());
     }).until(() -> swerveDrive.getPitch().getDegrees() > 10.5 || swerveDrive.getPitch().getDegrees() < -10.5);
+    // TODO: .AndThen() balance robot. Change name to balance
   }
 
-  // public Command moveToChargeStation() {
-  //   return getPose().getX() <= Constants.Auton.chargeStationLeftPose ? 
-  //   new GoToPose(
-  //     new Pose2d(new Translation2d(5,Constants.Auton.lineUpMid), new Rotation2d()),
-  //     new PathConstraints(Auton.maxSpeedMPS, Auton.maxAccelerationMPS),
-  //     this).getCommand() : 
-  //   new GoToPose(
-  //       new Pose2d(new Translation2d(2,Constants.Auton.lineUpMid), new Rotation2d()),
-  //       new PathConstraints(Auton.maxSpeedMPS, Auton.maxAccelerationMPS),
-  //     this).getCommand();
-  // }
+  public Command taxi() {
+    return moveRevOntoChargeStation().andThen( this.run(() -> drive(new Translation2d(1,0), 0, true, true)).until(() -> swerveDrive.getPitch().getDegrees() > 0.1 || swerveDrive.getPitch().getDegrees() < 0.1));
+  }
+
+
+  // TODO: Experiment with going to pose to get onto charge station balance. Could be a lot easier code wise as long as we have limelight
 
   public Command balanceRobot() {
     System.out.println("Balancing");
     return this.run(() -> {
             System.out.println(swerveDrive.getPitch().getDegrees());
-            drive(new Translation2d(Constants.Auton.balancePID.calculate(swerveDrive.getPitch().getDegrees(),0),0),0, false, true);
+            drive(new Translation2d(Constants.Auton.balancePID.calculate(swerveDrive.getPitch().getDegrees(),0),0),0, true, true);
         }
     )
     .until(() -> swerveDrive.getPitch().getDegrees() < .1 && swerveDrive.getPitch().getDegrees() > -.1)

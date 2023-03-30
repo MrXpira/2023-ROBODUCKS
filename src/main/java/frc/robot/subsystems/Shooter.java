@@ -34,7 +34,7 @@ public class Shooter extends SubsystemBase {
   public Shooter() {
     shootMotorFollower = new WPI_TalonFX(Constants.ShooterConstants.SHOOTER_TOP_MOTOR);
     shootMotor = new WPI_TalonFX(Constants.ShooterConstants.SHOOTER_BOTTOM_MOTOR);
-    pValue = Shuffleboard.getTab("Shoot").addPersistent("PValue", 0).getEntry().getDouble(0);
+    // pValue = Shuffleboard.getTab("Shoot").addPersistent("PValue", 0).getEntry().getDouble(0);
     configMotors();
     startLogging();
   }
