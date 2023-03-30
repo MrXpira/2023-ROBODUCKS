@@ -135,6 +135,8 @@ public final class Constants
     public static final double maxSpeedMPS = 5;
 
     public static final double maxAccelerationMPS = 3;
+
+	  public static final double moveOntoChargeStationSpeed = 3;
   }
 
   public static final class Drivebase
