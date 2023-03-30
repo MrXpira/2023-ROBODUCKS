@@ -9,6 +9,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import edu.wpi.first.wpilibj.Timer;
 import swervelib.encoders.SwerveAbsoluteEncoder;
+import swervelib.math.SwerveMath;
 import swervelib.parser.PIDFConfig;
 import swervelib.simulation.ctre.PhysicsSim;
 import swervelib.telemetry.SwerveDriveTelemetry;
@@ -325,7 +326,7 @@ public class TalonFXSwerve extends SwerveMotor
   public double convertToNativeSensorUnits(double setpoint, double position)
   {
     setpoint =
-        isDriveMotor ? setpoint * .1 : placeInAppropriate0To360Scope(position, setpoint);
+        isDriveMotor ? setpoint * .1 : SwerveMath.placeInAppropriate0To360Scope(position, setpoint);
     return setpoint / positionConversionFactor;
   }
 
