@@ -31,7 +31,7 @@ import webblib.util.chargedup.ScoringArea;
  */
 public final class Constants
 {
-  public static final double ROBOT_MASS = (148 - 20.3) * 0.453592; // 32lbs * kg per pound
+  public static final double ROBOT_MASS = 34;
   public static final Matter CHASSIS    = new Matter(new Translation3d(0, 0, Units.inchesToMeters(8)), ROBOT_MASS);
   public static final double LOOP_TIME  = 0.13; //s, 20ms + 110ms sprk max velocity lag
 
@@ -99,9 +99,6 @@ public final class Constants
 
     public static final double MAX_SPEED        = 4;
     public static final double MAX_ACCELERATION = 2;
-
-    public static final Translation3d cameraTranslation = new Translation3d(0, 0.0, 0);
-    public static final Rotation3d cameraRotation = new Rotation3d(0, 0, 0);
 
     public static final double lineUpMid = 1.73;
     public static final List<ScoringArea> scoreAreaList =
