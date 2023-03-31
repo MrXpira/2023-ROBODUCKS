@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AutoMap;
+import frc.robot.commands.ShootingArmCommands;
 import frc.robot.commands.swervedrive.auto.GoToScoring;
 import frc.robot.commands.swervedrive.auto.PathBuilder;
 import frc.robot.commands.swervedrive.auto.GoToScoring.POSITION;
@@ -54,8 +55,10 @@ public class RobotContainer
   private static final CommandXboxController operatorXbox = new CommandXboxController(1);
 
 
-  private final AutoMap autoMap = new AutoMap();
+  private final ShootingArmCommands shootingArmCommands = new ShootingArmCommands(shooter, arm);
+  private final AutoMap autoMap = new AutoMap(shootingArmCommands);
   private final PathBuilder builder = new PathBuilder(drivebase, autoMap.getEventMap());
+  
 
   private final int translationAxis = XboxController.Axis.kLeftY.value;
   private final int strafeAxis = XboxController.Axis.kLeftX.value;
@@ -84,9 +87,8 @@ public class RobotContainer
     initializeChooser();
 
     drivebase.setDefaultCommand(closedFieldRel);
-    
-    arm.setDefaultCommand(arm.moveArm(() -> operatorXbox.getRawAxis(3)-operatorXbox.getRawAxis(2)));
 
+    shooter.setDefaultCommand(shootingArmCommands.Rest());
     //shooter.setDefaultCommand(shooter.moveArm(() -> driverXbox.getLeftTriggerAxis() - driverXbox.getRightTriggerAxis()));
   }
 
@@ -142,20 +144,24 @@ public class RobotContainer
     
     driverXbox.a().whileTrue(new RepeatCommand(new InstantCommand(drivebase::lock, drivebase)));
     driverXbox.y().onTrue((new InstantCommand(drivebase::zeroGyro)));
-
-    operatorXbox.y().whileTrue(shooter.shoot(ShootSpeed.High));
-    operatorXbox.b().whileTrue(shooter.shoot(ShootSpeed.Mid));
-    operatorXbox.a().whileTrue(shooter.shoot(ShootSpeed.Low));
-    operatorXbox.x().whileTrue(shooter.intake());
-    operatorXbox.start().whileTrue(shooter.shoot(1, 1));
-
-    // operatorXbox.a().whileTrue(new SequentialCommandGroup(arm.moveArmToPosition(ArmPosition.Low), shooter.shoot(ShootSpeed.Low)));
-    // operatorXbox.b().whileTrue(new SequentialCommandGroup(arm.moveArmToPosition(ArmPosition.Mid), shooter.shoot(ShootSpeed.Mid)));
-    // operatorXbox.y().whileTrue(new SequentialCommandGroup(arm.moveArmToPosition(ArmPosition.High), shooter.shoot(ShootSpeed.High)));
-    // operatorXbox.x().whileTrue(new SequentialCommandGroup(arm.moveArmToPosition(ArmPosition.Intake), shooter.intake()));
     driverXbox.povRight().whileTrue(new GoToScoring(drivebase, POSITION.LEFT).getCommand());
     driverXbox.povDown().whileTrue(new GoToScoring(drivebase, POSITION.MIDDLE).getCommand());
     driverXbox.povLeft().whileTrue(new GoToScoring(drivebase, POSITION.RIGHT).getCommand());
+
+    // operatorXbox.y().whileTrue(shooter.shoot(ShootSpeed.High));
+    // operatorXbox.b().whileTrue(shooter.shoot(ShootSpeed.Mid));
+    // operatorXbox.a().whileTrue(shooter.shoot(ShootSpeed.Low));
+    // operatorXbox.x().whileTrue(shooter.intake());
+    //operatorXbox.start().whileTrue(shooter.shoot(1, 1));
+
+    operatorXbox.x().whileTrue(shootingArmCommands.Intake());
+    operatorXbox.b().whileTrue(shootingArmCommands.ShootMid());
+    operatorXbox.y().whileTrue(shootingArmCommands.ShootHigh());
+    operatorXbox.a().whileTrue(shootingArmCommands.ShootLow());
+    operatorXbox.leftBumper().whileTrue(shootingArmCommands.Cannon());
+
+    /* Manual Arm Override */
+    operatorXbox.rightBumper().whileTrue(arm.moveArm(() -> operatorXbox.getRawAxis(3)-operatorXbox.getRawAxis(2)));
   }   
 
   /**

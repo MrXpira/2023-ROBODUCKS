@@ -65,7 +65,13 @@ public final class Constants
     public static final boolean shooterArmEnableCurrentLimit = true;
     public static final double openLoopRamp = 0.25;
     public static final double motionCruiseVelocity = 1000;
-    public static final double motionAcceleration = 1000;  
+    public static final double motionAcceleration = 1000;
+    public static final double MidPosition = 0;
+    public static final double restPosition = 0;
+    public static final double lowPosition = 100;
+    public static final double highPosition = 100;
+    public static final double intakePosition = 500;
+    public static double cannonPosition = 250;  
   }
   public static final class ShooterConstants {
     public static final int SHOOTER_TOP_MOTOR = 15;
@@ -85,6 +91,7 @@ public final class Constants
 
     public static final double intakeVelocity = .3 ;
     public static final double currentThreshold = 25;
+    public static int cannonVelocity;
 
   }
   public static final class Auton

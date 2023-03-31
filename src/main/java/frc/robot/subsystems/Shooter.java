@@ -13,7 +13,9 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.SimpleWidget;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
 
 public class Shooter extends SubsystemBase {
@@ -28,7 +30,8 @@ public class Shooter extends SubsystemBase {
     High,
     Mid,
     Low,
-    Intake
+    Intake,
+    Cannon
   } 
   /** Creates a new Shooter. */
   public Shooter() {
@@ -97,7 +100,10 @@ public class Shooter extends SubsystemBase {
         case Intake: 
           speedTop = -Constants.ShooterConstants.intakeVelocity;
           speedBottom = -Constants.ShooterConstants.intakeVelocity;
-        break;
+          break;
+        case Cannon:
+          speedTop = -Constants.ShooterConstants.cannonVelocity;
+          speedBottom = -Constants.ShooterConstants.cannonVelocity;
         default: 
           speedTop = 0;
           speedBottom = 0;
@@ -121,10 +127,12 @@ public class Shooter extends SubsystemBase {
   }
 
   public Command intakeCurrent() {
-    return this.runEnd(() -> {
+    return this.run(() -> {
       shoot(ShootSpeed.Intake);
-    }, (() -> { 
-      shoot(ShootSpeed.Stop);     
-      })).withTimeout(1).until(() -> shootMotor.getStatorCurrent() > Constants.ShooterConstants.currentThreshold).andThen(shoot(ShootSpeed.Stop));
+    }).andThen(new WaitCommand(1)).andThen(() -> shoot(ShootSpeed.Intake)).until(() -> shootMotor.getStatorCurrent() > Constants.ShooterConstants.currentThreshold).andThen(shoot(ShootSpeed.Stop));
+  }
+
+  public Command intakeCurrent2() {
+    return Commands.sequence(intake(), shoot(ShootSpeed.High));
   }
 }

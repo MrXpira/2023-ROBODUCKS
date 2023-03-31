@@ -41,6 +41,8 @@ public class Arm extends SubsystemBase {
     Low,
     Mid,
     High,
+    Rest,
+    Cannon
   }
   /** Creates a new Shooter. */
   public Arm() {
@@ -139,12 +141,24 @@ public class Arm extends SubsystemBase {
       double targetPos;
       targetPos = 0;
       switch (position) {
-        case Intake: targetPos = 100;
-                      break;
-        case High: targetPos = 0;
+        case Intake: 
+          targetPos = Constants.ArmConstants.intakePosition;
           break;
-        case Low: break;
-        case Mid: break;
+        case High: 
+          targetPos = Constants.ArmConstants.highPosition;        
+          break;
+        case Low: 
+          targetPos = Constants.ArmConstants.lowPosition;
+          break;
+        case Mid: 
+          targetPos = Constants.ArmConstants.MidPosition;
+          break;
+        case Rest: 
+          targetPos = Constants.ArmConstants.restPosition;
+          break;
+        case Cannon:
+          targetPos = Constants.ArmConstants.cannonPosition;
+          break;
         default: break;
       }
       double armMotorVerticalOffset = 0;
