@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
 
 public class Arm extends SubsystemBase {
@@ -36,6 +37,8 @@ public class Arm extends SubsystemBase {
 
   boolean hasArmBeenReset;
 
+  ArmPosition currentArmPosition = ArmPosition.Rest;
+
   public enum ArmPosition {
     Intake,
     Low,
@@ -44,19 +47,23 @@ public class Arm extends SubsystemBase {
     Rest,
     Cannon
   }
+
+  
   /** Creates a new Shooter. */
   public Arm() {
     hasArmBeenReset = false;
-    armMotor = new WPI_TalonFX(Constants.ArmConstants.ARM_MAIN_MOTOR);
-    armMotorFollower = new WPI_TalonFX(Constants.ArmConstants.ARM_FOLLOWER_MOTOR);
+    armMotor = new WPI_TalonFX(Constants.ArmConstants.ARM_MAIN_MOTOR, Constants.CANBUS);
+    armMotorFollower = new WPI_TalonFX(Constants.ArmConstants.ARM_FOLLOWER_MOTOR, Constants.CANBUS);
     
-    m_armFF = new ArmFeedforward(Constants.ArmConstants.armkS, Constants.ArmConstants.armkG, 0);
+    m_armFF = new ArmFeedforward(Constants.ArmConstants.armkS, Constants.ArmConstants.armkG, Constants.ArmConstants.kV, Constants.ArmConstants.kA);
 
     configMotors();
     startLogging();
   }
 
   public void configMotors() {
+    
+    // armMotor.configMotionSCurveStrength(5);
     armMotor.configFactoryDefault();
     armMotorFollower.configFactoryDefault();
 
@@ -72,23 +79,18 @@ public class Arm extends SubsystemBase {
     ArmFXConfig.motionCruiseVelocity = Constants.ArmConstants.motionCruiseVelocity;
     ArmFXConfig.motionAcceleration = Constants.ArmConstants.motionAcceleration;
   
-    armMotor.configVoltageCompSaturation(10);
-    armMotor.enableVoltageCompensation(true);
     armMotor.configAllSettings(ArmFXConfig);
 
-    armMotor.setInverted(TalonFXInvertType.Clockwise);
-    armMotor.setSensorPhase(true);
+    armMotor.setInverted(TalonFXInvertType.CounterClockwise);    
+    armMotorFollower.setInverted(TalonFXInvertType.OpposeMaster);
 
     armMotor.configMotionSCurveStrength(0);
-    armMotor.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 40, 45, 1));
+    armMotor.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 40, 50, 1));
     armMotor.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, Constants.ArmConstants.shooterArmContinuousCurrentLimit, Constants.ArmConstants.shooterArmPeakCurrentLimit, Constants.ArmConstants.shooterArmPeakCurrentDuration));
     
-    armMotorFollower.configVoltageCompSaturation(10);
-    armMotorFollower.enableVoltageCompensation(true);
     armMotorFollower.follow(armMotor);
     
-    armMotorFollower.setInverted(TalonFXInvertType.OpposeMaster);
-    armMotorFollower.setSensorPhase(false);
+    
 
     armMotorFollower.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 40, 45, 1));
     armMotorFollower.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, Constants.ArmConstants.shooterArmContinuousCurrentLimit, Constants.ArmConstants.shooterArmPeakCurrentLimit, Constants.ArmConstants.shooterArmPeakCurrentDuration));
@@ -97,6 +99,8 @@ public class Arm extends SubsystemBase {
     armMotor.setSelectedSensorPosition(0, Constants.ArmConstants.kPIDLoopIdx, Constants.ArmConstants.kTimeoutMs);
     armMotorFollower.setSelectedSensorPosition(0, Constants.ArmConstants.kPIDLoopIdx, Constants.ArmConstants.kTimeoutMs);
     setBrake(NeutralMode.Brake);
+    armMotor.set(ControlMode.PercentOutput, 0);
+    armMotorFollower.set(ControlMode.PercentOutput, 0);
   }
 
   public void startLogging() {
@@ -112,20 +116,25 @@ public class Arm extends SubsystemBase {
 
   @Override
   public void periodic() {
-      armPosition.append(armMotor.getSelectedSensorPosition());
-      //armAngleDegrees.append(getAngle());
-      armVelocity.append(armMotor.getSelectedSensorVelocity());
-      armMotorCurrent.append(armMotor.getStatorCurrent());
-      armMotorCurrent2.append(armMotorFollower.getStatorCurrent());
-      armMotorTemp.append(armMotor.getTemperature());
+      // armPosition.append(armMotor.getSelectedSensorPosition());
+      // //armAngleDegrees.append(getAngle());
+      // armVelocity.append(armMotor.getSelectedSensorVelocity());
+      // armMotorCurrent.append(armMotor.getStatorCurrent());
+      // armMotorCurrent2.append(armMotorFollower.getStatorCurrent());
+      // armMotorTemp.append(armMotor.getTemperature());
 
-      SmartDashboard.putBoolean("ArmReset", hasArmBeenReset);
-      SmartDashboard.putNumber("ArmSensorPosition", armMotor.getSelectedSensorPosition());
-      SmartDashboard.putNumber("ArmSensorVelocity", armMotor.getSelectedSensorVelocity());
-      SmartDashboard.putNumber("AppliedThrottle", armMotor.getMotorOutputPercent());
+      // SmartDashboard.putBoolean("ArmReset", hasArmBeenReset);
+      // SmartDashboard.putNumber("ArmSensorPosition", armMotor.getSelectedSensorPosition());
+      // SmartDashboard.putNumber("ArmSensorVelocity", armMotor.getSelectedSensorVelocity());
 
-      SmartDashboard.putNumber("ArmStatorCurrent", armMotor.getStatorCurrent());
-      SmartDashboard.putNumber("ArmSupplyCurrent", armMotor.getSupplyCurrent());
+      // SmartDashboard.putNumber("ArmFollowerSensorPosition", armMotorFollower.getSelectedSensorPosition());
+      // SmartDashboard.putNumber("ArmFollowerSensorVelocity", armMotorFollower.getSelectedSensorVelocity());
+      // SmartDashboard.putNumber("AppliedThrottle", armMotor.getMotorOutputPercent());
+
+      // SmartDashboard.putNumber("ArmStatorCurrent", armMotor.getStatorCurrent());
+      // SmartDashboard.putNumber("ArmSupplyCurrent", armMotor.getSupplyCurrent());
+      System.out.println(getCurrentPosition());
+     // System.out.println("Veloicty " + armMotor.getSelectedSensorVelocity() + " Position " + armMotor.getSelectedSensorPosition() + " Output " + armMotor.getMotorOutputPercent() + " current " + armMotor.getStatorCurrent());
   }
 
   public Command moveArm(DoubleSupplier percent) {
@@ -135,8 +144,15 @@ public class Arm extends SubsystemBase {
     });
   }
 
+  private double armDegrees() {
+    double armMotorVerticalOffset = 5600;
+    return (armMotor.getSelectedSensorPosition() - armMotorVerticalOffset ) * (360.0/ (Constants.ArmConstants.ArmGearRatio * 2048));
+  }
+
+  int kLoopsToSettle = 10;
+  int _withinThresholdLoops = 0;
+
   public Command moveArmToPosition(ArmPosition position) {
-    
     return this.run(() -> {
       double targetPos;
       targetPos = 0;
@@ -159,20 +175,44 @@ public class Arm extends SubsystemBase {
         case Cannon:
           targetPos = Constants.ArmConstants.cannonPosition;
           break;
-        default: break;
+        default: 
+          targetPos = 0;
+          break;
       }
-      double armMotorVerticalOffset = 0;
+      currentArmPosition = position;
+      
 
       // we know vertical offset, treat it as 0, then add 90 degrees = pi/2 rad to get angle from horizontal
-      double angle = (2*Math.PI / 2048 / 16) * (armMotor.getSelectedSensorPosition() - armMotorVerticalOffset) + (Math.PI / 2.0);
+      //double angle = (2*Math.PI / 2048 / 32) * (armMotor.getSelectedSensorPosition() - armMotorVerticalOffset) + (Math.PI / 2.0);
 
-      armMotor.set(ControlMode.MotionMagic, targetPos, DemandType.ArbitraryFeedForward, 
-                      m_armFF.calculate(angle, armMotor.getSelectedSensorVelocity()));
+      // System.out.println(m_armFF.calculate(angle, armMotor.getSelectedSensorVelocity()));
+      //System.out.println(Math.cos(angle) * .055);
+      
+      //armMotor.set(ControlMode.MotionMagic, targetPos, DemandType.ArbitraryFeedForward, .2);
+      armMotor.set(ControlMode.MotionMagic, targetPos);
+      
+      // armMotor.set(ControlMode.MotionMagic, targetPos, DemandType.ArbitraryFeedForward, Math.cos(angle) * .04);
+      // armMotor.set(ControlMode.MotionMagic, targetPos, DemandType.ArbitraryFeedForward, 
+      //                 m_armFF.calculate(angle, armMotor.getSelectedSensorVelocity()));
 
       armMotorFollower.follow(armMotor);
-      // DataLogManager.log("Current Angle: " + angle);
-      System.out.println("Current Angle: " + angle);
-    }).until(() -> armMotor.isMotionProfileFinished());
+      System.out.println(armDegrees());
+  
+
+      if (armMotor.getClosedLoopError() < +10 &&
+          armMotor.getClosedLoopError() > -10) {
+  
+          ++_withinThresholdLoops;
+      } else {
+          _withinThresholdLoops = 0;
+      }
+    }).until(() -> _withinThresholdLoops > kLoopsToSettle);
+  }
+
+  public Command armHigh() {
+    return this.run(() -> {
+      moveArmToPosition(ArmPosition.High);
+    });
   }
 
   public Command resetArm() {
@@ -181,11 +221,17 @@ public class Arm extends SubsystemBase {
     return this.runOnce(() -> {
         armMotor.setSelectedSensorPosition(0);
         armMotorFollower.setSelectedSensorPosition(0);
-    });
+    }).andThen(() -> currentArmPosition = ArmPosition.Rest);
   }
 
   public void setBrake(NeutralMode breakMode) {
     armMotor.setNeutralMode(breakMode);
     armMotorFollower.setNeutralMode(breakMode);
   }
+
+  public ArmPosition getCurrentPosition() {
+    return currentArmPosition;
+  }
 }
+
+

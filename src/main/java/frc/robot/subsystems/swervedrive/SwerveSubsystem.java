@@ -13,13 +13,16 @@ import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -57,7 +60,7 @@ public class SwerveSubsystem extends SubsystemBase
 
   LimelightResults previousResult = null;
   double previousTime = 0;
-  boolean isRedAlliance;
+  double[] currentBotpose;
 
   /**
    * Initialize {@link SwerveDrive} with the directory provided.
@@ -75,8 +78,6 @@ public class SwerveSubsystem extends SubsystemBase
     {
       throw new RuntimeException(e);
     }
-
-    setCurrentTeamColor();
 }
 
   /**
@@ -109,6 +110,11 @@ public class SwerveSubsystem extends SubsystemBase
   {
     swerveDrive.drive(translation, rotation, fieldRelative, isOpenLoop);
   }
+
+  // public void driveWithAutoAlign(Translation2d translation, double heading, boolean fieldRelative, boolean isOpenLoop) {
+  //   double rotation = Constants.Auton.angleAutoPID.createPIDController().calculate(getHeading().getDegrees(), heading);
+  //   swerveDrive.drive(translation, rotation, fieldRelative, isOpenLoop);
+  // }
 
   @Override
   public void periodic()
@@ -292,60 +298,53 @@ public class SwerveSubsystem extends SubsystemBase
     return swerveDrive.getPitch();
   }
 
-  /**
-   * Sets team color for vision pose estimation
-   */
-  public void setCurrentTeamColor() {
-    if (DriverStation.getAlliance() == DriverStation.Alliance.Blue) {
-        System.out.println("Blue Team Configured");
-        isRedAlliance = false;
-    } else {
-        System.out.println("Red Team Configured");
-        isRedAlliance = true;
-    }
+  public double[] visionPose() {
+    return DriverStation.getAlliance() == Alliance.Blue ? LimelightHelpers.getBotPose_wpiBlue("") : LimelightHelpers.getBotPose_wpiRed("");
   }
 
-  // public double[] getCurrentBotPoseVision() {
-  //   return DriverStation.getAlliance() == Alliance.Blue ? LimelightHelpers.getBotPose_wpiBlue("") : LimelightHelpers.getBotPose_wpiRed("");
+  // private double getDistanceFromTarget() {
+  //   Pose3d pose = LimelightHelpers.getTargetPose3d_RobotSpace("");
+  //   return new Translation2d(pose.getX(), pose.getY()).getNorm();
   // }
 
-  // private void updateVisionPose() {
-    // if (!Robot.isSimulation()) {
-  //   LimelightResults pipelineResults =  LimelightHelpers.getLatestResults("");
-  //   if (pipelineResults.targetingResults.valid) {
-  //     double[] botpose = getCurrentBotPoseVision();
-  //     double timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
+  private void updateVisionPose() {
+  //   if (Robot.isReal()) {
+  //     LimelightResults pipelineResults =  LimelightHelpers.getLatestResults("");
+  //     if (pipelineResults.targetingResults.valid) {
+  //       double[] botpose = visionPose();
+  //       double timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
+  
+  //       Pose2d currentPose = new Pose2d(new Translation2d(botpose[0], botpose[1]), new Rotation2d(Units.degreesToRadians(botpose[5])));
+  //       //System.out.println("DISTANCE FROM TARGET " + getDistanceFromTarget());
+  //       swerveDrive.addVisionMeasurement(currentPose,timestamp, false, 1);
+  //     }
+  //  }
+  }
 
-  //     Pose2d currentPose = new Pose2d(new Translation2d(botpose[0], botpose[1]), new Rotation2d(Units.degreesToRadians(botpose[5])));
-
-  //     swerveDrive.addVisionMeasurement(currentPose,timestamp, true, .5);
-  //   }
-//    }   
-  // }
   
   /**
    * Updates the current pose
    */
-  private void updateVisionPose() {
-    if (!Robot.isSimulation()) {
-      LimelightResults pipelineResults =  LimelightHelpers.getLatestResults("");
-      double[] botpose;
-      double timestamp;
-      if (pipelineResults.targetingResults.valid) {
-        if (isRedAlliance) {
-          botpose = LimelightHelpers.getBotPose_wpiRed("");
-          timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
-        } else {
-          botpose = LimelightHelpers.getBotPose_wpiBlue("");
-          timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
-        }
+  // private void updateVisionPose() {
+  //   if (!Robot.isSimulation()) {
+  //     LimelightResults pipelineResults =  LimelightHelpers.getLatestResults("");
+  //     double[] botpose;
+  //     double timestamp;
+  //     if (pipelineResults.targetingResults.valid) {
+  //       if (isRedAlliance) {
+  //         botpose = LimelightHelpers.getBotPose_wpiRed("");
+  //         timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
+  //       } else {
+  //         botpose = LimelightHelpers.getBotPose_wpiBlue("");
+  //         timestamp = (Timer.getFPGATimestamp() - (botpose[6]/1000.0));
+  //       }
   
-        Pose2d currentPose = new Pose2d(new Translation2d(botpose[0], botpose[1]), new Rotation2d(Units.degreesToRadians(botpose[5])));
+  //       Pose2d currentPose = new Pose2d(new Translation2d(botpose[0], botpose[1]), new Rotation2d(Units.degreesToRadians(botpose[5])));
   
-        swerveDrive.addVisionMeasurement(currentPose,timestamp, true, .5);
-      }
-    }
-  }
+  //       swerveDrive.addVisionMeasurement(currentPose,timestamp, true, .5);
+  //     }
+  //   }
+  // }
 
   public Command moveRevOntoChargeStation() {
     // TODO: Get pose and see if in front or behind charge station.
@@ -360,7 +359,6 @@ public class SwerveSubsystem extends SubsystemBase
   public Command taxi() {
     return moveRevOntoChargeStation().andThen( this.run(() -> drive(new Translation2d(1,0), 0, true, true)).until(() -> swerveDrive.getPitch().getDegrees() > 0.1 || swerveDrive.getPitch().getDegrees() < 0.1));
   }
-
 
   // TODO: Experiment with going to pose to get onto charge station balance. Could be a lot easier code wise as long as we have limelight
 

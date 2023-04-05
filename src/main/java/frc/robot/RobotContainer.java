@@ -22,13 +22,17 @@ import frc.robot.commands.swervedrive.auto.PathBuilder;
 import frc.robot.commands.swervedrive.auto.GoToScoring.POSITION;
 import frc.robot.commands.swervedrive.drivebase.TeleopDrive;
 import frc.robot.subsystems.Arm;
+import frc.robot.subsystems.CANdleSubsystem;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Arm.ArmPosition;
 import frc.robot.subsystems.Shooter.ShootSpeed;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
+import swervelib.SwerveDrive;
 
 import java.io.File;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.sensors.AbsoluteSensorRange;
 import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlanner;
 
@@ -46,6 +50,7 @@ public class RobotContainer
                                                                          "swerve/falcon"));
   private final Shooter shooter = new Shooter();
   private final Arm arm = new Arm();
+  private final CANdleSubsystem candleSubsystem = new CANdleSubsystem();
   // CommandJoystick rotationController = new CommandJoystick(1);
   // Replace with CommandPS4Controller or CommandJoystick if needed
   //CommandJoystick driverController = new CommandJoystick(1);
@@ -56,23 +61,23 @@ public class RobotContainer
 
 
   private final ShootingArmCommands shootingArmCommands = new ShootingArmCommands(shooter, arm);
-  private final AutoMap autoMap = new AutoMap(shootingArmCommands);
+  private final AutoMap autoMap = new AutoMap(shootingArmCommands, drivebase);
   private final PathBuilder builder = new PathBuilder(drivebase, autoMap.getEventMap());
   
 
   private final int translationAxis = XboxController.Axis.kLeftY.value;
   private final int strafeAxis = XboxController.Axis.kLeftX.value;
   private final int rotationAxis = XboxController.Axis.kRightX.value;
-  private final DigitalInput resetArmSwitch = new DigitalInput(0); // Limit switch on DIO 3
-  private final DigitalInput unlockArmSwitch = new DigitalInput(1); // Limit switch on DIO 3
+  private final DigitalInput resetArmSwitch = new DigitalInput(0); // Limit switch on DIO 0
+  private final DigitalInput unlockArmSwitch = new DigitalInput(1); // Limit switch on DIO 1
 
 
   private final TeleopDrive closedFieldRel =
   new TeleopDrive(
       drivebase,
-      () -> -driverXbox.getRawAxis(translationAxis), 
-      () -> -driverXbox.getRawAxis(strafeAxis), 
-      () -> -driverXbox.getRawAxis(rotationAxis), 
+      () -> driverXbox.getRawAxis(translationAxis), 
+      () -> driverXbox.getRawAxis(strafeAxis), 
+      () -> driverXbox.getRawAxis(rotationAxis), 
       () -> driverXbox.leftBumper().getAsBoolean(),
       false,
       false
@@ -88,8 +93,8 @@ public class RobotContainer
 
     drivebase.setDefaultCommand(closedFieldRel);
 
-    shooter.setDefaultCommand(shootingArmCommands.Rest());
-    //shooter.setDefaultCommand(shooter.moveArm(() -> driverXbox.getLeftTriggerAxis() - driverXbox.getRightTriggerAxis()));
+    arm.setDefaultCommand(shootingArmCommands.Rest());
+    shooter.setDefaultCommand(shooter.stop());
   }
 
   private void initializeChooser() {
@@ -138,15 +143,22 @@ public class RobotContainer
     Trigger resetArm = new Trigger(resetArmSwitch::get);
     Trigger unlockArm = new Trigger(unlockArmSwitch::get);
     if (DriverStation.isDisabled()) {
-      resetArm.onTrue(arm.resetArm());
-      unlockArm.onTrue(new InstantCommand(() -> arm.setBrake(NeutralMode.Coast))).onFalse(new InstantCommand(() -> arm.setBrake(NeutralMode.Brake)));  
+      resetArm.onTrue(arm.resetArm().ignoringDisable(true));
+      unlockArm.onTrue(new InstantCommand(() -> arm.setBrake(NeutralMode.Coast)).ignoringDisable(true))
+               .onFalse(new InstantCommand(() -> arm.setBrake(NeutralMode.Brake)).ignoringDisable(true));  
     }
     
     driverXbox.a().whileTrue(new RepeatCommand(new InstantCommand(drivebase::lock, drivebase)));
     driverXbox.y().onTrue((new InstantCommand(drivebase::zeroGyro)));
-    driverXbox.povRight().whileTrue(new GoToScoring(drivebase, POSITION.LEFT).getCommand());
-    driverXbox.povDown().whileTrue(new GoToScoring(drivebase, POSITION.MIDDLE).getCommand());
-    driverXbox.povLeft().whileTrue(new GoToScoring(drivebase, POSITION.RIGHT).getCommand());
+    // driverXbox.povRight().whileTrue(new GoToScoring(drivebase, POSITION.LEFT).getCommand());
+    // driverXbox.povDown().whileTrue(new GoToScoring(drivebase, POSITION.MIDDLE).getCommand());
+    // driverXbox.povLeft().whileTrue(new GoToScoring(drivebase, POSITION.RIGHT).getCommand());
+    // driverXbox.b().whileTrue(new TeleopDriveWithAutoAlign(drivebase,
+    // () -> -driverXbox.getRawAxis(translationAxis), 
+    // () -> -driverXbox.getRawAxis(strafeAxis), 
+    // 10,
+    // () -> driverXbox.leftBumper().getAsBoolean(),
+    // false));
 
     // operatorXbox.y().whileTrue(shooter.shoot(ShootSpeed.High));
     // operatorXbox.b().whileTrue(shooter.shoot(ShootSpeed.Mid));
@@ -155,13 +167,22 @@ public class RobotContainer
     //operatorXbox.start().whileTrue(shooter.shoot(1, 1));
 
     operatorXbox.x().whileTrue(shootingArmCommands.Intake());
-    operatorXbox.b().whileTrue(shootingArmCommands.ShootMid());
-    operatorXbox.y().whileTrue(shootingArmCommands.ShootHigh());
-    operatorXbox.a().whileTrue(shootingArmCommands.ShootLow());
-    operatorXbox.leftBumper().whileTrue(shootingArmCommands.Cannon());
+    operatorXbox.rightBumper().whileTrue(arm.moveArmToPosition(ArmPosition.Cannon));
+    // operatorXbox.b().whileTrue(arm.moveArmToPosition(ArmPosition.Mid));
+    // operatorXbox.y().whileTrue(arm.moveArmToPosition(ArmPosition.High));
+    // operatorXbox.a().whileTrue(arm.moveArmToPosition(ArmPosition.Low));
+    // operatorXbox.x().whileTrue(arm.moveArmToPosition(ArmPosition.Cannon));
+    operatorXbox.b().onTrue(shooter.shootMid());
+    operatorXbox.y().onTrue(shooter.shootHigh());
+    operatorXbox.a().onTrue(shooter.shootLow());
+    operatorXbox.leftBumper().onTrue(shooter.shootCannon());
+
+    
+    // operatorXbox.x().whileTrue(arm.moveArmToPosition(ArmPosition.Cannon));
+    operatorXbox.back().onTrue(shootingArmCommands.Cannon());
 
     /* Manual Arm Override */
-    operatorXbox.rightBumper().whileTrue(arm.moveArm(() -> operatorXbox.getRawAxis(3)-operatorXbox.getRawAxis(2)));
+    operatorXbox.start().whileTrue(arm.moveArm(() -> operatorXbox.getRawAxis(3)-operatorXbox.getRawAxis(2)));
   }   
 
   /**

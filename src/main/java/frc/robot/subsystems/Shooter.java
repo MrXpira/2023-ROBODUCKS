@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
+import frc.robot.Constants.ShooterConstants;
 
 public class Shooter extends SubsystemBase {
   WPI_TalonFX shootMotor; 
@@ -35,11 +36,17 @@ public class Shooter extends SubsystemBase {
   } 
   /** Creates a new Shooter. */
   public Shooter() {
-    shootMotorFollower = new WPI_TalonFX(Constants.ShooterConstants.SHOOTER_TOP_MOTOR);
-    shootMotor = new WPI_TalonFX(Constants.ShooterConstants.SHOOTER_BOTTOM_MOTOR);
+    shootMotorFollower = new WPI_TalonFX(ShooterConstants.SHOOTER_TOP_MOTOR, Constants.CANBUS);
+    shootMotor = new WPI_TalonFX(ShooterConstants.SHOOTER_BOTTOM_MOTOR, Constants.CANBUS);
+
+    shootMotor.set(ControlMode.PercentOutput, 0);
+    shootMotorFollower.set(ControlMode.PercentOutput, 0);
+
     // pValue = Shuffleboard.getTab("Shoot").addPersistent("PValue", 0).getEntry().getDouble(0);
     configMotors();
     startLogging();
+
+    
   }
 
   private void configMotors() {
@@ -70,69 +77,97 @@ public class Shooter extends SubsystemBase {
     // System.out.println(Shuffleboard.getTab("Shoot").addPersistent("PValue", 0).getEntry().getDouble(0));
   }
 
-  public Command shoot(double speedTop, double speedBottom) {
-    return this.runEnd(() -> {
-      shootMotorFollower.set(ControlMode.PercentOutput, speedTop);
-      shootMotor.set(ControlMode.PercentOutput, speedBottom);
-    },(() -> {
-      shootMotorFollower.set(ControlMode.PercentOutput, 0);
-      shootMotor.set(ControlMode.PercentOutput, 0);
-    }));
+  private void shoot(ShootSpeed shootSpeed) {
+    double speedTop;
+    double speedBottom;
+    switch (shootSpeed) {
+      case Low: 
+        speedTop = Constants.ShooterConstants.bottomGoalVelocityTopMotor;
+        speedBottom = Constants.ShooterConstants.bottomGoalVelocityBottomMotor;
+        break;
+      case Mid: 
+        speedTop = Constants.ShooterConstants.midGoalVelocityTopMotor;
+        speedBottom = Constants.ShooterConstants.midGoalVelocityBottomMotor;
+        break;
+      case High: 
+        speedTop = Constants.ShooterConstants.highGoalVelocityTopMotor;
+        speedBottom = Constants.ShooterConstants.highGoalVelocityBottomMotor;
+        break;
+      case Intake: 
+        speedTop = -Constants.ShooterConstants.intakeVelocity;
+        speedBottom = -Constants.ShooterConstants.intakeVelocity;
+        break;
+      case Cannon:
+        speedTop = Constants.ShooterConstants.cannonGoalVelocityTopMotor;
+        speedBottom = Constants.ShooterConstants.cannonGoalVelocityBottomMotor;
+        break;
+      default: 
+        speedTop = 0;
+        speedBottom = 0;
+        break;
+    }
+    
+    shootMotorFollower.set(ControlMode.PercentOutput, speedTop);
+    shootMotor.set(ControlMode.PercentOutput, speedBottom);
   }
 
-  public Command shoot(ShootSpeed shootSpeed) {
-    return this.runEnd(() -> {
-      double speedTop;
-      double speedBottom;
-      switch (shootSpeed) {
-        case Low: 
-          speedTop = Constants.ShooterConstants.bottomGoalVelocityTopMotor;
-          speedBottom = Constants.ShooterConstants.bottomGoalVelocityBottomMotor;
-          break;
-        case Mid: 
-          speedTop = Constants.ShooterConstants.midGoalVelocityTopMotor;
-          speedBottom = Constants.ShooterConstants.midGoalVelocityBottomMotor;
-          break;
-        case High: 
-          speedTop = Constants.ShooterConstants.highGoalVelocityTopMotor;
-          speedBottom = Constants.ShooterConstants.highGoalVelocityBottomMotor;
-          break;
-        case Intake: 
-          speedTop = -Constants.ShooterConstants.intakeVelocity;
-          speedBottom = -Constants.ShooterConstants.intakeVelocity;
-          break;
-        case Cannon:
-          speedTop = -Constants.ShooterConstants.cannonVelocity;
-          speedBottom = -Constants.ShooterConstants.cannonVelocity;
-        default: 
-          speedTop = 0;
-          speedBottom = 0;
-          break;
-      }
-      
-      shootMotorFollower.set(ControlMode.PercentOutput, speedTop);
-      shootMotor.set(ControlMode.PercentOutput, speedBottom);
-    },(() -> {
+  public Command shootHigh() {
+    return this.runOnce(() -> {
+      shoot(ShootSpeed.High);
+    }).andThen(new WaitCommand(ShooterConstants.shootWaitTime)).andThen(() -> {
+    shootMotorFollower.set(ControlMode.PercentOutput, 0);
+    shootMotor.set(ControlMode.PercentOutput, 0);
+    });
+  }
+
+  public Command shootMid() {
+    return this.runOnce(() -> {
+      shoot(ShootSpeed.Mid);
+    }).andThen(new WaitCommand(ShooterConstants.shootWaitTime)).andThen(() -> {
+    shootMotorFollower.set(ControlMode.PercentOutput, 0);
+    shootMotor.set(ControlMode.PercentOutput, 0);
+    });
+  }
+
+  public Command shootLow() {
+    return this.runOnce(() -> {
+      shoot(ShootSpeed.Low);
+    }).andThen(new WaitCommand(ShooterConstants.shootWaitTime)).andThen(() -> {
+    shootMotorFollower.set(ControlMode.PercentOutput, 0);
+    shootMotor.set(ControlMode.PercentOutput, 0);
+    });
+  }
+
+  public Command shootCannon() {
+    return this.runOnce(() -> {
+      shoot(ShootSpeed.Cannon);
+    }).andThen(new WaitCommand(ShooterConstants.shootWaitTime)).andThen(() -> {
+    shootMotorFollower.set(ControlMode.PercentOutput, 0);
+    shootMotor.set(ControlMode.PercentOutput, 0);
+    });
+  }
+
+  public Command stop() {
+    return this.runOnce(() -> {
       shootMotorFollower.set(ControlMode.PercentOutput, 0);
       shootMotor.set(ControlMode.PercentOutput, 0);
-    }));
+    });
   }
 
   public Command intake() {
-    return this.runEnd(() -> {
+    return this.runEnd(() -> shoot(ShootSpeed.Intake), 
+                      (() -> shoot(ShootSpeed.Stop)));
+  }
+
+  public Command intakeTime(int seconds) {
+    return this.runOnce(() -> {
       shoot(ShootSpeed.Intake);
-    }, (() -> { 
-      shoot(ShootSpeed.Stop);  
-      }));//.until(() -> shootMotor.getStatorCurrent() > Constants.ShooterConstants.currentThreshold).andThen(shoot(ShootSpeed.Stop));
+    }).andThen(new WaitCommand(seconds)).andThen(() -> shoot(ShootSpeed.Stop));
   }
 
   public Command intakeCurrent() {
     return this.run(() -> {
       shoot(ShootSpeed.Intake);
-    }).andThen(new WaitCommand(1)).andThen(() -> shoot(ShootSpeed.Intake)).until(() -> shootMotor.getStatorCurrent() > Constants.ShooterConstants.currentThreshold).andThen(shoot(ShootSpeed.Stop));
-  }
-
-  public Command intakeCurrent2() {
-    return Commands.sequence(intake(), shoot(ShootSpeed.High));
+    }).andThen(new WaitCommand(1)).andThen(() -> shoot(ShootSpeed.Intake)).until(() -> shootMotor.getStatorCurrent() > Constants.ShooterConstants.currentThreshold).andThen(() -> shoot(ShootSpeed.Stop));
   }
 }

@@ -11,7 +11,6 @@ import java.util.List;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
@@ -34,6 +33,7 @@ public final class Constants
   public static final double ROBOT_MASS = 34;
   public static final Matter CHASSIS    = new Matter(new Translation3d(0, 0, Units.inchesToMeters(8)), ROBOT_MASS);
   public static final double LOOP_TIME  = 0.13; //s, 20ms + 110ms sprk max velocity lag
+  public static final String CANBUS = "Canivore";
 
   public static final class ArmConstants {
     public static final int ARM_MAIN_MOTOR = 13;
@@ -43,35 +43,35 @@ public final class Constants
     public static final int kPIDLoopIdx = 0;
 
     /* Sysid values divided by 12 to convert from voltage */
-    public static final double armkG = (0 / 12);
-    public static final double armkS = (0 / 12);
-
-
-    public static final double armkP = 0.0731;
+    public static final double armkG = (.45);
+    public static final double armkS = (0);
+    public static final double openLoopRamp = 0.25;
+    public static final double motionCruiseVelocity = 4000;
+    public static final double motionAcceleration = 3000;
+    public static final double kA = 0;
+    public static final double kV = 0;
+    public static final double armkP = .15; //.5
     public static final double armkI = 0;
-    public static final double armkD = 0;
+    public static final double armkD = 9.44; //5
     public static final double armkF = 0;
 
-    public static final double kArmReduction = 16;
-    public static final double kArmLengthMeters = 10;
-    public static final double kArmMassKg = 10;
-    public static final double kMinAngleRads = -2 * Math.PI;
-    public static final double kMaxAngleRads = 2 * Math.PI;
     public static final double kArmEncoderDistPerPulse = 2.0 * Math.PI / 2048;
 
-    public static final double shooterArmPeakCurrentDuration = 0.3;
-    public static final double shooterArmPeakCurrentLimit = 35;
-    public static final double shooterArmContinuousCurrentLimit = 30;
+    public static final double shooterArmPeakCurrentDuration = 1;
+    public static final double shooterArmPeakCurrentLimit = 55;
+    public static final double shooterArmContinuousCurrentLimit = 40;
     public static final boolean shooterArmEnableCurrentLimit = true;
-    public static final double openLoopRamp = 0.25;
-    public static final double motionCruiseVelocity = 1000;
-    public static final double motionAcceleration = 1000;
+    
+
+
     public static final double MidPosition = 0;
     public static final double restPosition = 0;
-    public static final double lowPosition = 100;
-    public static final double highPosition = 100;
-    public static final double intakePosition = 500;
-    public static double cannonPosition = 250;  
+    public static final double lowPosition = 0;
+    public static final double highPosition = 0;
+    public static final double intakePosition = 19500 ;
+    public static final double cannonPosition = 7000;
+    public static final int ArmGearRatio = 32;
+    
   }
   public static final class ShooterConstants {
     public static final int SHOOTER_TOP_MOTOR = 15;
@@ -83,15 +83,16 @@ public final class Constants
     public static final double midGoalVelocityBottomMotor = .18;
     public static final double midGoalVelocityTopMotor = .18;
 
-    public static final double bottomGoalVelocityTopMotor = .075;
-    public static final double bottomGoalVelocityBottomMotor = .075;
+    public static final double bottomGoalVelocityTopMotor = .14;
+    public static final double bottomGoalVelocityBottomMotor = .05;
     
-    public static final double cannonGoalVelocityTopMotor = 1;
-    public static final double cannonGoalVelocityBottomMotor = 1;
+    public static final double cannonGoalVelocityTopMotor = .55;
+    public static final double cannonGoalVelocityBottomMotor = .45;
 
-    public static final double intakeVelocity = .3 ;
-    public static final double currentThreshold = 25;
-    public static int cannonVelocity;
+    public static final double intakeVelocity = .3;
+    public static final int currentThreshold = 25;
+    public static final double shootWaitTime = 1;
+    
 
   }
   public static final class Auton

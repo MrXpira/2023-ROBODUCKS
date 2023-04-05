@@ -13,33 +13,49 @@
 
       private Arm arm;
 
-      public ShootingArmCommands(Shooter shooter, Arm intake) {
+      public ShootingArmCommands(Shooter shooter, Arm arm) {
         this.shooter = shooter;
-        this.shooter = shooter;
+        this.arm = arm;
+  
       }
 
       public Command Intake() {
-          return Commands.sequence(arm.moveArmToPosition(ArmPosition.Intake), shooter.intake());
+        return Commands.parallel(arm.moveArmToPosition(ArmPosition.Intake), shooter.intake());
       }
 
       public Command Rest() {
-          return Commands.parallel(arm.moveArmToPosition(ArmPosition.Rest), shooter.shoot(ShootSpeed.Stop));
+        return arm.moveArmToPosition(ArmPosition.Rest);
       }
 
       public Command ShootHigh() {
-        return Commands.sequence(arm.moveArmToPosition(ArmPosition.High), shooter.shoot(ShootSpeed.High));
+        return Commands.sequence(arm.moveArmToPosition(ArmPosition.High), shooter.shootHigh());
       } 
 
       public Command ShootMid() {
-        return Commands.sequence(arm.moveArmToPosition(ArmPosition.Mid), shooter.shoot(ShootSpeed.Mid));
+        return Commands.sequence(arm.moveArmToPosition(ArmPosition.Mid), shooter.shootMid());
       }
 
       public Command ShootLow() {
-        return Commands.sequence(arm.moveArmToPosition(ArmPosition.Low), shooter.shoot(ShootSpeed.Low));
+        return Commands.sequence(arm.moveArmToPosition(ArmPosition.Low), shooter.shootLow());
       }
 
       public Command Cannon() {
-        return Commands.sequence(arm.moveArmToPosition(ArmPosition.Cannon), shooter.shoot(ShootSpeed.Cannon));
+        return Commands.sequence(arm.moveArmToPosition(ArmPosition.Cannon), shooter.shootCannon());
       }
 
+      public Command Shoot() {
+        System.out.println(arm.getCurrentPosition());
+        switch (arm.getCurrentPosition()) {
+          case High: 
+            return shooter.shootHigh();
+          case Low: 
+            return shooter.shootLow();
+          case Mid: 
+            return shooter.shootMid();
+          case Cannon:
+            return shooter.shootCannon();
+          default:
+            return shooter.stop();
+        }
+      }
   }
